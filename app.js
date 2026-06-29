@@ -1,16 +1,10 @@
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQeboumr1it6uT_7ml6R2W1lQN9TVSwn6ewjhe1XmcbYbjVDzs0mKHrCpXt_8DbpvNth4F4kwI1gB-K/pub?gid=0&single=true&output=csv";
-
 const state = {
+  currentMonth: "Fatura Julho",
   rows: [],
-  columns: [],
   filteredRows: []
 };
 
-const moneyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL"
-});
-
+const moneyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 
 const statusEl = document.querySelector("#status");
@@ -19,181 +13,81 @@ const tableEl = document.querySelector("#dataTable");
 const tableInfoEl = document.querySelector("#tableInfo");
 const searchInput = document.querySelector("#searchInput");
 const reloadBtn = document.querySelector("#reloadBtn");
+const monthSelect = document.querySelector("#monthSelect");
+const categoryChart = document.querySelector("#categoryChart");
+const ownerChart = document.querySelector("#ownerChart");
+const insightsEl = document.querySelector("#insights");
 
 function normalizeText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let value = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-
-    if (char === '"' && insideQuotes && nextChar === '"') {
-      value += '"';
-      i++;
-      continue;
-    }
-
-    if (char === '"') {
-      insideQuotes = !insideQuotes;
-      continue;
-    }
-
-    if (char === "," && !insideQuotes) {
-      row.push(value.trim());
-      value = "";
-      continue;
-    }
-
-    if ((char === "\n" || char === "\r") && !insideQuotes) {
-      if (char === "\r" && nextChar === "\n") i++;
-      row.push(value.trim());
-      if (row.some(Boolean)) rows.push(row);
-      row = [];
-      value = "";
-      continue;
-    }
-
-    value += char;
-  }
-
-  row.push(value.trim());
-  if (row.some(Boolean)) rows.push(row);
-
-  if (!rows.length) return { columns: [], data: [] };
-
-  const columns = rows[0].map((column, index) => column || `Coluna ${index + 1}`);
-  const data = rows.slice(1).map(items => {
-    return columns.reduce((record, column, index) => {
-      record[column] = items[index] || "";
-      return record;
+function parseStaticCSV(text, month) {
+  const lines = text.trim().split(/\n+/);
+  const headers = lines.shift().split(",");
+  return lines.map(line => {
+    const parts = line.split(",");
+    const row = headers.reduce((acc, header, index) => {
+      acc[header] = parts[index] || "";
+      return acc;
     }, {});
-  });
-
-  return { columns, data };
-}
-
-function parseNumber(value) {
-  if (value === null || value === undefined) return 0;
-
-  const raw = String(value)
-    .replace(/R\$/g, "")
-    .replace(/%/g, "")
-    .replace(/\s/g, "")
-    .trim();
-
-  if (!raw) return 0;
-
-  const normalized = raw.includes(",")
-    ? raw.replace(/\./g, "").replace(",", ".")
-    : raw;
-
-  const number = Number(normalized.replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(number) ? number : 0;
-}
-
-function isNumericColumn(column, rows) {
-  const sample = rows
-    .map(row => row[column])
-    .filter(Boolean)
-    .slice(0, 12);
-
-  if (!sample.length) return false;
-
-  const numericCount = sample.filter(value => Math.abs(parseNumber(value)) > 0 || /^0([,.]0+)?$/.test(String(value).trim())).length;
-  return numericCount / sample.length >= 0.6;
-}
-
-function looksLikeMoneyColumn(column) {
-  const normalized = normalizeText(column);
-  return ["valor", "venda", "liquido", "bruto", "receita", "faturamento", "preco", "ticket"].some(term => normalized.includes(term));
-}
-
-function findColumn(possibleNames) {
-  return state.columns.find(column => {
-    const normalizedColumn = normalizeText(column);
-    return possibleNames.some(name => normalizedColumn.includes(normalizeText(name)));
+    row.Mes = month;
+    row.Valor = Number(row.Valor || 0);
+    return row;
   });
 }
 
-function sumColumn(column) {
-  return state.rows.reduce((total, row) => total + parseNumber(row[column]), 0);
+function groupSum(rows, key) {
+  return rows.reduce((acc, row) => {
+    acc[row[key]] = (acc[row[key]] || 0) + row.Valor;
+    return acc;
+  }, {});
 }
 
-function formatMetric(column, value) {
-  return looksLikeMoneyColumn(column) ? moneyFormatter.format(value) : numberFormatter.format(value);
+function sortEntries(object) {
+  return Object.entries(object).sort((a, b) => b[1] - a[1]);
 }
 
-function buildCard(label, value) {
+function pct(value, total) {
+  if (!total) return "0%";
+  return `${((value / total) * 100).toFixed(1).replace(".", ",")}%`;
+}
+
+function buildCard(label, value, helper = "") {
   const article = document.createElement("article");
   article.className = "card";
-  article.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+  article.innerHTML = `<span>${label}</span><strong>${value}</strong>${helper ? `<small>${helper}</small>` : ""}`;
   return article;
 }
 
-function renderSummary() {
-  summaryEl.innerHTML = "";
-  summaryEl.appendChild(buildCard("Linhas importadas", numberFormatter.format(state.rows.length)));
-  summaryEl.appendChild(buildCard("Colunas encontradas", numberFormatter.format(state.columns.length)));
-
-  const statusColumn = findColumn(["status", "situacao"]);
-  if (statusColumn) {
-    const approvedCount = state.rows.filter(row => normalizeText(row[statusColumn]).includes("aprov")).length;
-    summaryEl.appendChild(buildCard("Aprovados", numberFormatter.format(approvedCount)));
-  }
-
-  const priorityColumns = [
-    findColumn(["valor venda", "venda", "valor bruto"]),
-    findColumn(["valor liquido", "líquido", "liquido"]),
-    findColumn(["meta"])
-  ].filter(Boolean);
-
-  const numericColumns = state.columns.filter(column => isNumericColumn(column, state.rows));
-  const columnsToShow = [...new Set([...priorityColumns, ...numericColumns])].slice(0, 5);
-
-  columnsToShow.forEach(column => {
-    const total = sumColumn(column);
-    summaryEl.appendChild(buildCard(`Total de ${column}`, formatMetric(column, total)));
+function renderBars(container, entries, total) {
+  container.innerHTML = "";
+  entries.forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "bar-row";
+    item.innerHTML = `
+      <div class="bar-top"><strong>${label}</strong><span>${moneyFormatter.format(value)} · ${pct(value, total)}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.min((value / total) * 100, 100)}%"></div></div>
+    `;
+    container.appendChild(item);
   });
 }
 
 function renderTable(rows) {
+  const columns = ["Data", "Estabelecimento", "Valor", "Categoria", "Local", "Dono"];
   tableEl.innerHTML = "";
-
-  if (!state.columns.length) {
-    tableInfoEl.textContent = "Nenhuma coluna encontrada.";
-    return;
-  }
-
-  tableInfoEl.textContent = `${numberFormatter.format(rows.length)} linha(s) exibida(s) de ${numberFormatter.format(state.rows.length)} importada(s).`;
+  tableInfoEl.textContent = `${numberFormatter.format(rows.length)} compra(s) exibida(s) de ${numberFormatter.format(state.rows.length)} analisada(s).`;
 
   const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  state.columns.forEach(column => {
-    const th = document.createElement("th");
-    th.textContent = column;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
+  thead.innerHTML = `<tr>${columns.map(column => `<th>${column}</th>`).join("")}</tr>`;
 
   const tbody = document.createElement("tbody");
   rows.forEach(row => {
     const tr = document.createElement("tr");
-    state.columns.forEach(column => {
-      const td = document.createElement("td");
-      td.textContent = row[column] || "";
-      tr.appendChild(td);
-    });
+    tr.innerHTML = columns.map(column => {
+      const value = column === "Valor" ? moneyFormatter.format(row[column]) : row[column];
+      return `<td>${value || ""}</td>`;
+    }).join("");
     tbody.appendChild(tr);
   });
 
@@ -201,50 +95,85 @@ function renderTable(rows) {
   tableEl.appendChild(tbody);
 }
 
+function renderInsights(rows, total, byCategory, byOwner, byLocal) {
+  const topCategory = sortEntries(byCategory)[0];
+  const topOwner = sortEntries(byOwner)[0];
+  const topLocal = sortEntries(byLocal)[0];
+  const food = byCategory["Alimentação"] || 0;
+  const travel = byCategory["Viagem"] || 0;
+  const mobility = byCategory["Locomoção"] || 0;
+  const smallPurchases = rows.filter(row => row.Valor <= 30).reduce((sum, row) => sum + row.Valor, 0);
+
+  const ideas = [
+    `A maior concentração está em ${topCategory[0]}, com ${moneyFormatter.format(topCategory[1])}, equivalente a ${pct(topCategory[1], total)} da fatura selecionada. Aqui é onde o controle precisa começar, porque é a categoria que mais mexe no total.`,
+    `${topOwner[0]} é o maior centro de custo da fatura, somando ${moneyFormatter.format(topOwner[1])}. Isso não é necessariamente ruim, mas precisa virar orçamento mensal por dono para parar de depender só da percepção.`,
+    `O local que mais pesa é ${topLocal[0]}, com ${moneyFormatter.format(topLocal[1])}. Quando o gasto muda de cidade, principalmente em viagem, ele sobe rápido porque mistura transporte, comida, passeio e compra pequena.`,
+    `Alimentação soma ${moneyFormatter.format(food)} e locomoção soma ${moneyFormatter.format(mobility)}. São duas categorias de vazamento silencioso, porque várias compras pequenas parecem inofensivas, mas acumulam.`,
+    travel > total * 0.35 ? `Viagem está muito acima do normal nesta fatura: ${moneyFormatter.format(travel)}. Para melhorar, o ideal é criar um teto separado de viagem antes de viajar, com limite diário para comida, transporte e rolê.` : `Viagem está sob controle relativo nesta fatura, mas ainda deve ficar separada do gasto comum para não bagunçar a leitura do mês.`,
+    `Compras de até R$ 30 somaram ${moneyFormatter.format(smallPurchases)}. Esse é o tipo de gasto que vale atacar com regra simples: juntar deslocamentos, reduzir delivery impulsivo e definir um limite de compra pequena por dia.`
+  ];
+
+  insightsEl.innerHTML = ideas.map(text => `<article class="insight">${text}</article>`).join("");
+}
+
+function renderDashboard() {
+  const rows = parseStaticCSV(FINANCE_DATA.tabs[state.currentMonth], state.currentMonth);
+  state.rows = rows;
+  state.filteredRows = [...rows];
+
+  const total = rows.reduce((sum, row) => sum + row.Valor, 0);
+  const byCategory = groupSum(rows, "Categoria");
+  const byOwner = groupSum(rows, "Dono");
+  const byLocal = groupSum(rows, "Local");
+  const topPurchase = [...rows].sort((a, b) => b.Valor - a.Valor)[0];
+  const avgTicket = total / rows.length;
+
+  summaryEl.innerHTML = "";
+  summaryEl.appendChild(buildCard("Fatura analisada", state.currentMonth.replace("Fatura ", ""), `${rows.length} lançamentos`));
+  summaryEl.appendChild(buildCard("Total de gastos", moneyFormatter.format(total), `Ticket médio: ${moneyFormatter.format(avgTicket)}`));
+  summaryEl.appendChild(buildCard("Maior compra", moneyFormatter.format(topPurchase.Valor), `${topPurchase.Estabelecimento} · ${topPurchase.Categoria}`));
+  summaryEl.appendChild(buildCard("Categorias", numberFormatter.format(Object.keys(byCategory).length), "grupos de consumo"));
+
+  const overview = FINANCE_DATA.monthlyOverview.find(item => state.currentMonth.includes(item.mes));
+  if (overview) {
+    summaryEl.appendChild(buildCard("Resumo da aba geral", moneyFormatter.format(overview.valor), `Wesley ${moneyFormatter.format(overview.wesley)} · Analu ${moneyFormatter.format(overview.analu)} · Casal ${moneyFormatter.format(overview.casal)}`));
+  }
+
+  renderBars(categoryChart, sortEntries(byCategory), total);
+  renderBars(ownerChart, sortEntries(byOwner), total);
+  renderInsights(rows, total, byCategory, byOwner, byLocal);
+  renderTable(state.filteredRows);
+
+  statusEl.textContent = `Dados carregados de ${FINANCE_DATA.source}. Base estática atualizada em ${FINANCE_DATA.updatedAt}.`;
+  statusEl.style.color = "#86efac";
+}
+
 function applySearch() {
   const term = normalizeText(searchInput.value);
-
   state.filteredRows = term
     ? state.rows.filter(row => normalizeText(Object.values(row).join(" ")).includes(term))
     : [...state.rows];
-
   renderTable(state.filteredRows);
 }
 
-async function loadSheet() {
-  statusEl.textContent = "Carregando planilha...";
-  statusEl.style.color = "#cbd5e1";
-
-  try {
-    const response = await fetch(`${SHEET_CSV_URL}&cacheBust=${Date.now()}`);
-
-    if (!response.ok) {
-      throw new Error(`Erro ${response.status} ao buscar a planilha.`);
-    }
-
-    const text = await response.text();
-    const { columns, data } = parseCSV(text);
-
-    state.columns = columns;
-    state.rows = data.filter(row => Object.values(row).some(Boolean));
-    state.filteredRows = [...state.rows];
-
-    renderSummary();
-    renderTable(state.filteredRows);
-
-    statusEl.textContent = `Planilha carregada com sucesso. Última atualização: ${new Date().toLocaleString("pt-BR")}.`;
-    statusEl.style.color = "#86efac";
-  } catch (error) {
-    console.error(error);
-    statusEl.textContent = "Não consegui carregar os dados. Confirme se a planilha está publicada na web como CSV e se o link público continua ativo.";
-    statusEl.style.color = "#fca5a5";
-    summaryEl.innerHTML = "";
-    tableEl.innerHTML = "";
-    tableInfoEl.textContent = "Sem dados carregados.";
-  }
+function init() {
+  Object.keys(FINANCE_DATA.tabs).forEach(month => {
+    const option = document.createElement("option");
+    option.value = month;
+    option.textContent = month;
+    monthSelect.appendChild(option);
+  });
+  monthSelect.value = state.currentMonth;
+  renderDashboard();
 }
 
-searchInput.addEventListener("input", applySearch);
-reloadBtn.addEventListener("click", loadSheet);
+monthSelect.addEventListener("change", event => {
+  state.currentMonth = event.target.value;
+  searchInput.value = "";
+  renderDashboard();
+});
 
-loadSheet();
+searchInput.addEventListener("input", applySearch);
+reloadBtn.addEventListener("click", renderDashboard);
+
+init();
