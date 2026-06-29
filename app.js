@@ -17,6 +17,7 @@ const monthSelect = document.querySelector("#monthSelect");
 const categoryChart = document.querySelector("#categoryChart");
 const ownerChart = document.querySelector("#ownerChart");
 const insightsEl = document.querySelector("#insights");
+const monthComparisonEl = document.querySelector("#monthComparison");
 
 function normalizeText(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -37,6 +38,14 @@ function parseStaticCSV(text, month) {
   });
 }
 
+function getRows(month) {
+  return parseStaticCSV(FINANCE_DATA.tabs[month], month);
+}
+
+function getMonthName(month) {
+  return month.replace("Fatura ", "");
+}
+
 function groupSum(rows, key) {
   return rows.reduce((acc, row) => {
     acc[row[key]] = (acc[row[key]] || 0) + row.Valor;
@@ -51,6 +60,16 @@ function sortEntries(object) {
 function pct(value, total) {
   if (!total) return "0%";
   return `${((value / total) * 100).toFixed(1).replace(".", ",")}%`;
+}
+
+function diffLabel(value) {
+  if (Math.abs(value) < 0.01) return "Estável";
+  return value > 0 ? `+${moneyFormatter.format(value)}` : `-${moneyFormatter.format(Math.abs(value))}`;
+}
+
+function diffClass(value) {
+  if (Math.abs(value) < 0.01) return "neutral";
+  return value > 0 ? "up" : "down";
 }
 
 function buildCard(label, value, helper = "") {
@@ -71,6 +90,68 @@ function renderBars(container, entries, total) {
     `;
     container.appendChild(item);
   });
+}
+
+function renderComparison() {
+  const months = Object.keys(FINANCE_DATA.tabs);
+  const parsed = months.map(month => {
+    const rows = getRows(month);
+    return {
+      month,
+      label: getMonthName(month),
+      rows,
+      total: rows.reduce((sum, row) => sum + row.Valor, 0),
+      byCategory: groupSum(rows, "Categoria"),
+      byOwner: groupSum(rows, "Dono")
+    };
+  });
+
+  const [first, second] = parsed;
+  const totalDiff = second.total - first.total;
+  const categoryNames = [...new Set([...Object.keys(first.byCategory), ...Object.keys(second.byCategory)])];
+  const ownerNames = [...new Set([...Object.keys(first.byOwner), ...Object.keys(second.byOwner)])];
+  const biggestRise = categoryNames
+    .map(name => ({ name, diff: (second.byCategory[name] || 0) - (first.byCategory[name] || 0), second: second.byCategory[name] || 0, first: first.byCategory[name] || 0 }))
+    .sort((a, b) => b.diff - a.diff)[0];
+  const biggestDrop = categoryNames
+    .map(name => ({ name, diff: (second.byCategory[name] || 0) - (first.byCategory[name] || 0), second: second.byCategory[name] || 0, first: first.byCategory[name] || 0 }))
+    .sort((a, b) => a.diff - b.diff)[0];
+  const ownerRows = ownerNames.map(name => ({ name, first: first.byOwner[name] || 0, second: second.byOwner[name] || 0, diff: (second.byOwner[name] || 0) - (first.byOwner[name] || 0) })).sort((a, b) => b.second - a.second);
+
+  monthComparisonEl.innerHTML = `
+    <div class="comparison-cards">
+      <article class="mini-card"><span>${first.label}</span><strong>${moneyFormatter.format(first.total)}</strong><small>${first.rows.length} lançamentos</small></article>
+      <article class="mini-card"><span>${second.label}</span><strong>${moneyFormatter.format(second.total)}</strong><small>${second.rows.length} lançamentos</small></article>
+      <article class="mini-card"><span>Variação</span><strong class="${diffClass(totalDiff)}">${diffLabel(totalDiff)}</strong><small>${totalDiff > 0 ? "Aumento de gasto" : "Redução de gasto"}</small></article>
+      <article class="mini-card"><span>Maior alta</span><strong>${biggestRise.name}</strong><small>${diffLabel(biggestRise.diff)}</small></article>
+    </div>
+    <div class="comparison-grid">
+      <div class="comparison-box">
+        <h3>Categorias: ${first.label} vs ${second.label}</h3>
+        <table class="compact-table">
+          <thead><tr><th>Categoria</th><th>${first.label}</th><th>${second.label}</th><th>Dif.</th></tr></thead>
+          <tbody>
+            ${categoryNames.map(name => {
+              const firstValue = first.byCategory[name] || 0;
+              const secondValue = second.byCategory[name] || 0;
+              const diff = secondValue - firstValue;
+              return `<tr><td>${name}</td><td>${moneyFormatter.format(firstValue)}</td><td>${moneyFormatter.format(secondValue)}</td><td class="${diffClass(diff)}">${diffLabel(diff)}</td></tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="comparison-box">
+        <h3>Dono: ${first.label} vs ${second.label}</h3>
+        <table class="compact-table">
+          <thead><tr><th>Dono</th><th>${first.label}</th><th>${second.label}</th><th>Dif.</th></tr></thead>
+          <tbody>
+            ${ownerRows.map(row => `<tr><td>${row.name}</td><td>${moneyFormatter.format(row.first)}</td><td>${moneyFormatter.format(row.second)}</td><td class="${diffClass(row.diff)}">${diffLabel(row.diff)}</td></tr>`).join("")}
+          </tbody>
+        </table>
+        <div class="comparison-note">Principal leitura: ${biggestRise.name} foi a categoria que mais cresceu. ${biggestDrop && biggestDrop.diff < 0 ? `${biggestDrop.name} foi a que mais caiu.` : "Não houve queda relevante entre as categorias."}</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderTable(rows) {
@@ -105,19 +186,19 @@ function renderInsights(rows, total, byCategory, byOwner, byLocal) {
   const smallPurchases = rows.filter(row => row.Valor <= 30).reduce((sum, row) => sum + row.Valor, 0);
 
   const ideas = [
-    `A maior concentração está em ${topCategory[0]}, com ${moneyFormatter.format(topCategory[1])}, equivalente a ${pct(topCategory[1], total)} da fatura selecionada. Aqui é onde o controle precisa começar, porque é a categoria que mais mexe no total.`,
-    `${topOwner[0]} é o maior centro de custo da fatura, somando ${moneyFormatter.format(topOwner[1])}. Isso não é necessariamente ruim, mas precisa virar orçamento mensal por dono para parar de depender só da percepção.`,
-    `O local que mais pesa é ${topLocal[0]}, com ${moneyFormatter.format(topLocal[1])}. Quando o gasto muda de cidade, principalmente em viagem, ele sobe rápido porque mistura transporte, comida, passeio e compra pequena.`,
-    `Alimentação soma ${moneyFormatter.format(food)} e locomoção soma ${moneyFormatter.format(mobility)}. São duas categorias de vazamento silencioso, porque várias compras pequenas parecem inofensivas, mas acumulam.`,
-    travel > total * 0.35 ? `Viagem está muito acima do normal nesta fatura: ${moneyFormatter.format(travel)}. Para melhorar, o ideal é criar um teto separado de viagem antes de viajar, com limite diário para comida, transporte e rolê.` : `Viagem está sob controle relativo nesta fatura, mas ainda deve ficar separada do gasto comum para não bagunçar a leitura do mês.`,
-    `Compras de até R$ 30 somaram ${moneyFormatter.format(smallPurchases)}. Esse é o tipo de gasto que vale atacar com regra simples: juntar deslocamentos, reduzir delivery impulsivo e definir um limite de compra pequena por dia.`
+    `A maior concentração está em ${topCategory[0]}, com ${moneyFormatter.format(topCategory[1])}, equivalente a ${pct(topCategory[1], total)} da fatura selecionada. Esse é o primeiro ponto para definir teto mensal.`,
+    `${topOwner[0]} é o maior centro de custo da fatura, somando ${moneyFormatter.format(topOwner[1])}. O ideal é separar orçamento por dono para não misturar gasto individual, casal e loja.`,
+    `O local que mais pesa é ${topLocal[0]}, com ${moneyFormatter.format(topLocal[1])}. Quando entra viagem ou troca de cidade, vale trabalhar com limite diário para não perder controle.`,
+    `Alimentação soma ${moneyFormatter.format(food)} e locomoção soma ${moneyFormatter.format(mobility)}. São categorias de compra recorrente, então o ganho vem de regra simples, não de corte radical.`,
+    travel > total * 0.35 ? `Viagem está alta nesta fatura: ${moneyFormatter.format(travel)}. A recomendação é separar viagem do mês comum e definir limite por dia.` : `Viagem está sob controle relativo nesta fatura, mas ainda deve ficar separada do gasto comum para não distorcer o mês.`,
+    `Compras de até R$ 30 somaram ${moneyFormatter.format(smallPurchases)}. Esse gasto parece pequeno isolado, mas vira vazamento quando repete muitas vezes.`
   ];
 
   insightsEl.innerHTML = ideas.map(text => `<article class="insight">${text}</article>`).join("");
 }
 
 function renderDashboard() {
-  const rows = parseStaticCSV(FINANCE_DATA.tabs[state.currentMonth], state.currentMonth);
+  const rows = getRows(state.currentMonth);
   state.rows = rows;
   state.filteredRows = [...rows];
 
@@ -129,7 +210,7 @@ function renderDashboard() {
   const avgTicket = total / rows.length;
 
   summaryEl.innerHTML = "";
-  summaryEl.appendChild(buildCard("Fatura analisada", state.currentMonth.replace("Fatura ", ""), `${rows.length} lançamentos`));
+  summaryEl.appendChild(buildCard("Fatura analisada", getMonthName(state.currentMonth), `${rows.length} lançamentos`));
   summaryEl.appendChild(buildCard("Total de gastos", moneyFormatter.format(total), `Ticket médio: ${moneyFormatter.format(avgTicket)}`));
   summaryEl.appendChild(buildCard("Maior compra", moneyFormatter.format(topPurchase.Valor), `${topPurchase.Estabelecimento} · ${topPurchase.Categoria}`));
   summaryEl.appendChild(buildCard("Categorias", numberFormatter.format(Object.keys(byCategory).length), "grupos de consumo"));
@@ -139,13 +220,13 @@ function renderDashboard() {
     summaryEl.appendChild(buildCard("Resumo da aba geral", moneyFormatter.format(overview.valor), `Wesley ${moneyFormatter.format(overview.wesley)} · Analu ${moneyFormatter.format(overview.analu)} · Casal ${moneyFormatter.format(overview.casal)}`));
   }
 
+  renderComparison();
   renderBars(categoryChart, sortEntries(byCategory), total);
   renderBars(ownerChart, sortEntries(byOwner), total);
   renderInsights(rows, total, byCategory, byOwner, byLocal);
   renderTable(state.filteredRows);
 
   statusEl.textContent = `Dados carregados de ${FINANCE_DATA.source}. Base estática atualizada em ${FINANCE_DATA.updatedAt}.`;
-  statusEl.style.color = "#86efac";
 }
 
 function applySearch() {
