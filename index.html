@@ -10,24 +10,43 @@
   <main class="page">
     <section class="hero">
       <div>
-        <p class="eyebrow">Dashboard conectado ao Google Sheets</p>
+        <p class="eyebrow">Dashboard financeiro pessoal</p>
         <h1>Continhas</h1>
-        <p class="subtitle">Leitura automática da planilha publicada, com cards, busca, tabela e visão rápida dos principais valores.</p>
+        <p class="subtitle">Análise mês a mês dos gastos do cartão, mostrando para onde o dinheiro foi, quem consumiu, quais categorias pesaram mais e onde dá para melhorar.</p>
       </div>
-      <button id="reloadBtn" class="button">Atualizar dados</button>
+      <div class="hero-actions">
+        <select id="monthSelect" class="select"></select>
+        <button id="reloadBtn" class="button">Recalcular</button>
+      </div>
     </section>
 
-    <section id="status" class="status">Carregando planilha...</section>
+    <section id="status" class="status">Carregando análise...</section>
 
-    <section id="summary" class="cards" aria-label="Resumo dos dados"></section>
+    <section id="summary" class="cards" aria-label="Resumo dos gastos"></section>
+
+    <section class="grid-two">
+      <section class="panel">
+        <div class="panel-header"><div><h2>Gastos por categoria</h2><p>Onde o dinheiro foi consumido.</p></div></div>
+        <div id="categoryChart" class="bars"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-header"><div><h2>Gastos por dono</h2><p>Quem concentrou os lançamentos.</p></div></div>
+        <div id="ownerChart" class="bars"></div>
+      </section>
+    </section>
+
+    <section class="panel insights-panel">
+      <div class="panel-header"><div><h2>Leitura estratégica</h2><p>Diagnóstico prático para melhorar os próximos meses.</p></div></div>
+      <div id="insights" class="insights"></div>
+    </section>
 
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>Dados da planilha</h2>
+          <h2>Compras analisadas</h2>
           <p id="tableInfo">Aguardando carregamento...</p>
         </div>
-        <input id="searchInput" type="search" placeholder="Buscar na tabela..." />
+        <input id="searchInput" type="search" placeholder="Buscar gasto, categoria, dono ou local..." />
       </div>
       <div class="table-wrap">
         <table id="dataTable"></table>
@@ -35,6 +54,7 @@
     </section>
   </main>
 
+  <script src="finance-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
