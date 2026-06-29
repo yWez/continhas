@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Dashboard financeiro pessoal</p>
         <h1>Continhas</h1>
-        <p class="subtitle">Análise mês a mês dos gastos do cartão, mostrando para onde o dinheiro foi, quem consumiu, quais categorias pesaram mais e onde dá para melhorar.</p>
+        <p class="subtitle">Uma visão limpa dos gastos do cartão, com comparação entre meses, categorias, donos e pontos práticos para ajustar o consumo.</p>
       </div>
       <div class="hero-actions">
         <select id="monthSelect" class="select"></select>
@@ -22,15 +22,25 @@
 
     <section id="status" class="status">Carregando análise...</section>
 
+    <section class="panel comparison-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Comparativo entre meses</h2>
+          <p>Entenda o que subiu, o que caiu e onde o gasto mudou de comportamento.</p>
+        </div>
+      </div>
+      <div id="monthComparison" class="comparison"></div>
+    </section>
+
     <section id="summary" class="cards" aria-label="Resumo dos gastos"></section>
 
     <section class="grid-two">
       <section class="panel">
-        <div class="panel-header"><div><h2>Gastos por categoria</h2><p>Onde o dinheiro foi consumido.</p></div></div>
+        <div class="panel-header"><div><h2>Gastos por categoria</h2><p>Onde o dinheiro foi consumido no mês selecionado.</p></div></div>
         <div id="categoryChart" class="bars"></div>
       </section>
       <section class="panel">
-        <div class="panel-header"><div><h2>Gastos por dono</h2><p>Quem concentrou os lançamentos.</p></div></div>
+        <div class="panel-header"><div><h2>Gastos por dono</h2><p>Quem concentrou os lançamentos da fatura.</p></div></div>
         <div id="ownerChart" class="bars"></div>
       </section>
     </section>
