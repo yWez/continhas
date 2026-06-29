@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Continhas</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Dashboard conectado ao Google Sheets</p>
+        <h1>Continhas</h1>
+        <p class="subtitle">Leitura automática da planilha publicada, com cards, busca, tabela e visão rápida dos principais valores.</p>
+      </div>
+      <button id="reloadBtn" class="button">Atualizar dados</button>
+    </section>
+
+    <section id="status" class="status">Carregando planilha...</section>
+
+    <section id="summary" class="cards" aria-label="Resumo dos dados"></section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Dados da planilha</h2>
+          <p id="tableInfo">Aguardando carregamento...</p>
+        </div>
+        <input id="searchInput" type="search" placeholder="Buscar na tabela..." />
+      </div>
+      <div class="table-wrap">
+        <table id="dataTable"></table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
