@@ -1,9 +1,3 @@
-const state = {
-  currentMonth: "Fatura Julho",
-  rows: [],
-  filteredRows: []
-};
-
 const moneyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 
@@ -19,11 +13,17 @@ const ownerChart = document.querySelector("#ownerChart");
 const insightsEl = document.querySelector("#insights");
 const monthComparisonEl = document.querySelector("#monthComparison");
 
+const MONTH_ORDER = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
 function normalizeText(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-function parseStaticCSV(text, month) {
+function parseLegacyCSV(text, month) {
+  if (!text) return [];
   const lines = text.trim().split(/\n+/);
   const headers = lines.shift().split(",");
   return lines.map(line => {
@@ -32,23 +32,95 @@ function parseStaticCSV(text, month) {
       acc[header] = parts[index] || "";
       return acc;
     }, {});
-    row.Mes = month;
-    row.Valor = Number(row.Valor || 0);
-    return row;
-  });
+    return {
+      Data: row.Data || "",
+      Estabelecimento: row.Estabelecimento || "",
+      Valor: Number(row.Valor || 0),
+      Categoria: row.Categoria || "",
+      Local: row.Local || "",
+      Dono: row.Dono || "",
+      Mes: month
+    };
+  }).filter(row => row.Estabelecimento || row.Valor);
 }
 
-function getRows(month) {
-  return parseStaticCSV(FINANCE_DATA.tabs[month], month);
+function normalizeArrayRows(rows, month) {
+  return (rows || []).map(item => ({
+    Data: item[0] || "",
+    Estabelecimento: item[1] || "",
+    Valor: Number(item[2] || 0),
+    Categoria: item[3] || "Sem categoria",
+    Local: item[4] || "Não informado",
+    Dono: item[5] || "Não informado",
+    Mes: month
+  })).filter(row => row.Estabelecimento || row.Valor);
 }
 
 function getMonthName(month) {
-  return month.replace("Fatura ", "");
+  return String(month).replace("Fatura ", "");
 }
+
+function sortMonthKeys(keys) {
+  return [...keys].sort((a, b) => {
+    const aIndex = MONTH_ORDER.indexOf(getMonthName(a));
+    const bIndex = MONTH_ORDER.indexOf(getMonthName(b));
+    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b, "pt-BR");
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+}
+
+function buildDataStore() {
+  const months = {};
+
+  if (typeof FINANCE_DATA !== "undefined" && FINANCE_DATA.tabs) {
+    Object.entries(FINANCE_DATA.tabs).forEach(([month, csv]) => {
+      months[month] = parseLegacyCSV(csv, month);
+    });
+  }
+
+  if (typeof FINANCE_DATA !== "undefined" && FINANCE_DATA.months) {
+    Object.entries(FINANCE_DATA.months).forEach(([month, rows]) => {
+      months[month] = normalizeArrayRows(rows, month);
+    });
+  }
+
+  if (typeof LATEST_FINANCE_DATA !== "undefined" && LATEST_FINANCE_DATA.months) {
+    Object.entries(LATEST_FINANCE_DATA.months).forEach(([month, rows]) => {
+      months[month] = normalizeArrayRows(rows, month);
+    });
+  }
+
+  const overview = typeof LATEST_FINANCE_DATA !== "undefined" && LATEST_FINANCE_DATA.monthlyOverview
+    ? LATEST_FINANCE_DATA.monthlyOverview
+    : (FINANCE_DATA.monthlyOverview || []);
+
+  const updatedAt = typeof LATEST_FINANCE_DATA !== "undefined" && LATEST_FINANCE_DATA.updatedAt
+    ? LATEST_FINANCE_DATA.updatedAt
+    : FINANCE_DATA.updatedAt;
+
+  return {
+    source: FINANCE_DATA.source || "Google Sheets",
+    months,
+    overview,
+    updatedAt
+  };
+}
+
+const DATA = buildDataStore();
+const monthKeys = sortMonthKeys(Object.keys(DATA.months));
+
+const state = {
+  currentMonth: monthKeys[monthKeys.length - 1],
+  rows: [],
+  filteredRows: []
+};
 
 function groupSum(rows, key) {
   return rows.reduce((acc, row) => {
-    acc[row[key]] = (acc[row[key]] || 0) + row.Valor;
+    const label = row[key] || "Não informado";
+    acc[label] = (acc[label] || 0) + row.Valor;
     return acc;
   }, {});
 }
@@ -65,6 +137,12 @@ function pct(value, total) {
 function diffLabel(value) {
   if (Math.abs(value) < 0.01) return "Estável";
   return value > 0 ? `+${moneyFormatter.format(value)}` : `-${moneyFormatter.format(Math.abs(value))}`;
+}
+
+function diffPercent(value, base) {
+  if (!base) return value ? "Novo gasto" : "0%";
+  const result = (value / base) * 100;
+  return `${result > 0 ? "+" : ""}${result.toFixed(1).replace(".", ",")}%`;
 }
 
 function diffClass(value) {
@@ -84,71 +162,98 @@ function renderBars(container, entries, total) {
   entries.forEach(([label, value]) => {
     const item = document.createElement("div");
     item.className = "bar-row";
+    const width = total ? Math.min((value / total) * 100, 100) : 0;
     item.innerHTML = `
       <div class="bar-top"><strong>${label}</strong><span>${moneyFormatter.format(value)} · ${pct(value, total)}</span></div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.min((value / total) * 100, 100)}%"></div></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
     `;
     container.appendChild(item);
   });
 }
 
-function renderComparison() {
-  const months = Object.keys(FINANCE_DATA.tabs);
-  const parsed = months.map(month => {
-    const rows = getRows(month);
-    return {
-      month,
-      label: getMonthName(month),
-      rows,
-      total: rows.reduce((sum, row) => sum + row.Valor, 0),
-      byCategory: groupSum(rows, "Categoria"),
-      byOwner: groupSum(rows, "Dono")
-    };
-  });
+function getMonthStats(month) {
+  const rows = DATA.months[month] || [];
+  return {
+    month,
+    label: getMonthName(month),
+    rows,
+    total: rows.reduce((sum, row) => sum + row.Valor, 0),
+    byCategory: groupSum(rows, "Categoria"),
+    byOwner: groupSum(rows, "Dono")
+  };
+}
 
-  const [first, second] = parsed;
-  const totalDiff = second.total - first.total;
-  const categoryNames = [...new Set([...Object.keys(first.byCategory), ...Object.keys(second.byCategory)])];
-  const ownerNames = [...new Set([...Object.keys(first.byOwner), ...Object.keys(second.byOwner)])];
-  const biggestRise = categoryNames
-    .map(name => ({ name, diff: (second.byCategory[name] || 0) - (first.byCategory[name] || 0), second: second.byCategory[name] || 0, first: first.byCategory[name] || 0 }))
-    .sort((a, b) => b.diff - a.diff)[0];
-  const biggestDrop = categoryNames
-    .map(name => ({ name, diff: (second.byCategory[name] || 0) - (first.byCategory[name] || 0), second: second.byCategory[name] || 0, first: first.byCategory[name] || 0 }))
-    .sort((a, b) => a.diff - b.diff)[0];
-  const ownerRows = ownerNames.map(name => ({ name, first: first.byOwner[name] || 0, second: second.byOwner[name] || 0, diff: (second.byOwner[name] || 0) - (first.byOwner[name] || 0) })).sort((a, b) => b.second - a.second);
+function comparisonRows(current, previous, key) {
+  const labels = [...new Set([...Object.keys(previous[key]), ...Object.keys(current[key])])];
+  return labels.map(label => {
+    const before = previous[key][label] || 0;
+    const now = current[key][label] || 0;
+    return { label, before, now, diff: now - before };
+  }).sort((a, b) => b.now - a.now);
+}
+
+function renderComparison() {
+  const stats = monthKeys.map(getMonthStats);
+  const current = stats[stats.length - 1];
+  const previous = stats[stats.length - 2] || current;
+  const totalDiff = current.total - previous.total;
+
+  const monthlyCards = stats.map((item, index) => {
+    const prior = stats[index - 1];
+    const difference = prior ? item.total - prior.total : 0;
+    const helper = prior
+      ? `${diffLabel(difference)} em relação a ${prior.label}`
+      : `${item.rows.length} lançamentos`;
+    return `<article class="mini-card"><span>${item.label}</span><strong>${moneyFormatter.format(item.total)}</strong><small>${helper}</small></article>`;
+  }).join("");
+
+  if (stats.length < 2) {
+    monthComparisonEl.innerHTML = `<div class="comparison-cards">${monthlyCards}</div>`;
+    return;
+  }
+
+  const categories = comparisonRows(current, previous, "byCategory");
+  const owners = comparisonRows(current, previous, "byOwner");
+  const biggestRise = [...categories].sort((a, b) => b.diff - a.diff)[0];
+  const biggestDrop = [...categories].sort((a, b) => a.diff - b.diff)[0];
 
   monthComparisonEl.innerHTML = `
     <div class="comparison-cards">
-      <article class="mini-card"><span>${first.label}</span><strong>${moneyFormatter.format(first.total)}</strong><small>${first.rows.length} lançamentos</small></article>
-      <article class="mini-card"><span>${second.label}</span><strong>${moneyFormatter.format(second.total)}</strong><small>${second.rows.length} lançamentos</small></article>
-      <article class="mini-card"><span>Variação</span><strong class="${diffClass(totalDiff)}">${diffLabel(totalDiff)}</strong><small>${totalDiff > 0 ? "Aumento de gasto" : "Redução de gasto"}</small></article>
-      <article class="mini-card"><span>Maior alta</span><strong>${biggestRise.name}</strong><small>${diffLabel(biggestRise.diff)}</small></article>
+      ${monthlyCards}
+      <article class="mini-card"><span>Variação mais recente</span><strong class="${diffClass(totalDiff)}">${diffLabel(totalDiff)}</strong><small>${diffPercent(totalDiff, previous.total)} · ${previous.label} → ${current.label}</small></article>
     </div>
     <div class="comparison-grid">
       <div class="comparison-box">
-        <h3>Categorias: ${first.label} vs ${second.label}</h3>
+        <h3>Evolução mensal</h3>
         <table class="compact-table">
-          <thead><tr><th>Categoria</th><th>${first.label}</th><th>${second.label}</th><th>Dif.</th></tr></thead>
+          <thead><tr><th>Mês</th><th>Total</th><th>Lançamentos</th><th>Variação</th></tr></thead>
           <tbody>
-            ${categoryNames.map(name => {
-              const firstValue = first.byCategory[name] || 0;
-              const secondValue = second.byCategory[name] || 0;
-              const diff = secondValue - firstValue;
-              return `<tr><td>${name}</td><td>${moneyFormatter.format(firstValue)}</td><td>${moneyFormatter.format(secondValue)}</td><td class="${diffClass(diff)}">${diffLabel(diff)}</td></tr>`;
+            ${stats.map((item, index) => {
+              const prior = stats[index - 1];
+              const difference = prior ? item.total - prior.total : 0;
+              return `<tr><td>${item.label}</td><td>${moneyFormatter.format(item.total)}</td><td>${item.rows.length}</td><td class="${prior ? diffClass(difference) : "neutral"}">${prior ? diffLabel(difference) : "Base"}</td></tr>`;
             }).join("")}
           </tbody>
         </table>
       </div>
       <div class="comparison-box">
-        <h3>Dono: ${first.label} vs ${second.label}</h3>
+        <h3>Categorias: ${previous.label} × ${current.label}</h3>
         <table class="compact-table">
-          <thead><tr><th>Dono</th><th>${first.label}</th><th>${second.label}</th><th>Dif.</th></tr></thead>
+          <thead><tr><th>Categoria</th><th>${previous.label}</th><th>${current.label}</th><th>Dif.</th></tr></thead>
           <tbody>
-            ${ownerRows.map(row => `<tr><td>${row.name}</td><td>${moneyFormatter.format(row.first)}</td><td>${moneyFormatter.format(row.second)}</td><td class="${diffClass(row.diff)}">${diffLabel(row.diff)}</td></tr>`).join("")}
+            ${categories.map(row => `<tr><td>${row.label}</td><td>${moneyFormatter.format(row.before)}</td><td>${moneyFormatter.format(row.now)}</td><td class="${diffClass(row.diff)}">${diffLabel(row.diff)}</td></tr>`).join("")}
           </tbody>
         </table>
-        <div class="comparison-note">Principal leitura: ${biggestRise.name} foi a categoria que mais cresceu. ${biggestDrop && biggestDrop.diff < 0 ? `${biggestDrop.name} foi a que mais caiu.` : "Não houve queda relevante entre as categorias."}</div>
+        <div class="comparison-note">Maior alta: <strong>${biggestRise.label}</strong> (${diffLabel(biggestRise.diff)}). ${biggestDrop && biggestDrop.diff < 0 ? `Maior queda: <strong>${biggestDrop.label}</strong> (${diffLabel(biggestDrop.diff)}).` : "Não houve queda relevante entre as categorias."}</div>
+      </div>
+      <div class="comparison-box">
+        <h3>Donos: ${previous.label} × ${current.label}</h3>
+        <table class="compact-table">
+          <thead><tr><th>Dono</th><th>${previous.label}</th><th>${current.label}</th><th>Dif.</th></tr></thead>
+          <tbody>
+            ${owners.map(row => `<tr><td>${row.label}</td><td>${moneyFormatter.format(row.before)}</td><td>${moneyFormatter.format(row.now)}</td><td class="${diffClass(row.diff)}">${diffLabel(row.diff)}</td></tr>`).join("")}
+          </tbody>
+        </table>
       </div>
     </div>
   `;
@@ -177,9 +282,9 @@ function renderTable(rows) {
 }
 
 function renderInsights(rows, total, byCategory, byOwner, byLocal) {
-  const topCategory = sortEntries(byCategory)[0];
-  const topOwner = sortEntries(byOwner)[0];
-  const topLocal = sortEntries(byLocal)[0];
+  const topCategory = sortEntries(byCategory)[0] || ["Sem dados", 0];
+  const topOwner = sortEntries(byOwner)[0] || ["Sem dados", 0];
+  const topLocal = sortEntries(byLocal)[0] || ["Sem dados", 0];
   const food = byCategory["Alimentação"] || 0;
   const travel = byCategory["Viagem"] || 0;
   const mobility = byCategory["Locomoção"] || 0;
@@ -198,7 +303,7 @@ function renderInsights(rows, total, byCategory, byOwner, byLocal) {
 }
 
 function renderDashboard() {
-  const rows = getRows(state.currentMonth);
+  const rows = DATA.months[state.currentMonth] || [];
   state.rows = rows;
   state.filteredRows = [...rows];
 
@@ -206,8 +311,8 @@ function renderDashboard() {
   const byCategory = groupSum(rows, "Categoria");
   const byOwner = groupSum(rows, "Dono");
   const byLocal = groupSum(rows, "Local");
-  const topPurchase = [...rows].sort((a, b) => b.Valor - a.Valor)[0];
-  const avgTicket = total / rows.length;
+  const topPurchase = [...rows].sort((a, b) => b.Valor - a.Valor)[0] || { Valor: 0, Estabelecimento: "Sem dados", Categoria: "" };
+  const avgTicket = rows.length ? total / rows.length : 0;
 
   summaryEl.innerHTML = "";
   summaryEl.appendChild(buildCard("Fatura analisada", getMonthName(state.currentMonth), `${rows.length} lançamentos`));
@@ -215,7 +320,7 @@ function renderDashboard() {
   summaryEl.appendChild(buildCard("Maior compra", moneyFormatter.format(topPurchase.Valor), `${topPurchase.Estabelecimento} · ${topPurchase.Categoria}`));
   summaryEl.appendChild(buildCard("Categorias", numberFormatter.format(Object.keys(byCategory).length), "grupos de consumo"));
 
-  const overview = FINANCE_DATA.monthlyOverview.find(item => state.currentMonth.includes(item.mes));
+  const overview = DATA.overview.find(item => state.currentMonth.includes(item.mes));
   if (overview) {
     summaryEl.appendChild(buildCard("Resumo da aba geral", moneyFormatter.format(overview.valor), `Wesley ${moneyFormatter.format(overview.wesley)} · Analu ${moneyFormatter.format(overview.analu)} · Casal ${moneyFormatter.format(overview.casal)}`));
   }
@@ -226,7 +331,7 @@ function renderDashboard() {
   renderInsights(rows, total, byCategory, byOwner, byLocal);
   renderTable(state.filteredRows);
 
-  statusEl.textContent = `Dados carregados de ${FINANCE_DATA.source}. Base estática atualizada em ${FINANCE_DATA.updatedAt}.`;
+  statusEl.textContent = `Dados carregados de ${DATA.source}. Base sincronizada em ${DATA.updatedAt}. Novos meses aparecem automaticamente após a sincronização do GitHub.`;
 }
 
 function applySearch() {
@@ -238,7 +343,8 @@ function applySearch() {
 }
 
 function init() {
-  Object.keys(FINANCE_DATA.tabs).forEach(month => {
+  monthSelect.innerHTML = "";
+  monthKeys.forEach(month => {
     const option = document.createElement("option");
     option.value = month;
     option.textContent = month;
@@ -255,6 +361,6 @@ monthSelect.addEventListener("change", event => {
 });
 
 searchInput.addEventListener("input", applySearch);
-reloadBtn.addEventListener("click", renderDashboard);
+reloadBtn.addEventListener("click", () => window.location.reload());
 
 init();
