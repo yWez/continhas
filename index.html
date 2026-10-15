@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Dashboard financeiro pessoal</p>
         <h1>Continhas</h1>
-        <p class="subtitle">Uma visão limpa dos gastos do cartão, com comparação entre meses, categorias, donos e pontos práticos para ajustar o consumo.</p>
+        <p class="subtitle">Seus gastos em perspectiva: evolução das faturas, compras recorrentes e decisões mais inteligentes para o orçamento.</p>
       </div>
       <div class="hero-actions">
         <select id="monthSelect" class="select"></select>
@@ -34,6 +34,87 @@
 
     <section id="summary" class="cards" aria-label="Resumo dos gastos"></section>
 
+    <section id="advisorSignals" class="advisor-signals" aria-label="Indicadores financeiros"></section>
+
+    <section class="grid-two advisor-charts">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Evolução das faturas</h2>
+            <p>O que está mudando no valor do cartão ao longo dos meses.</p>
+          </div>
+        </div>
+        <div id="trendChart" class="advisor-trend"></div>
+        <p id="trendContext" class="advisor-chart-note"></p>
+      </section>
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Para onde vai o dinheiro?</h2>
+            <p>Participação das categorias na fatura escolhida.</p>
+          </div>
+        </div>
+        <div class="advisor-mix-layout">
+          <div id="mixDonut" class="advisor-donut" role="img" aria-label="Distribuição de gastos por categoria">
+            <div id="mixCenter" class="advisor-donut-center"></div>
+          </div>
+          <div id="mixLegend" class="advisor-legend"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel advisor-recurring-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Compras que mais se repetem</h2>
+          <p id="recurringContext">Analisando os lançamentos de todas as faturas...</p>
+        </div>
+      </div>
+      <div id="recurringTable"></div>
+      <p class="advisor-footnote">A repetição é calculada por nome normalizado de estabelecimento e fatura, não por data da compra. Parcelas, gastos distintos no mesmo local e nomes genéricos podem aparecer juntos. Confirme antes de cancelar ou cortar.</p>
+    </section>
+
+    <section class="grid-two advisor-planning-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Simulador de economia</h2>
+            <p>Qual seria o efeito de reduzir alguns gastos revisáveis?</p>
+          </div>
+        </div>
+        <div class="advisor-planning-body">
+          <div class="advisor-slider-heading">
+            <label for="savingPercent">Redução hipotética</label>
+            <strong id="savingPercentValue">15%</strong>
+          </div>
+          <input id="savingPercent" type="range" min="5" max="30" step="5" value="15" />
+          <div id="savingResult" class="advisor-result"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Saúde financeira: visão ampliada</h2>
+            <p>Informe o que falta para estimar sua folga mensal.</p>
+          </div>
+        </div>
+        <div class="advisor-planning-body">
+          <div class="advisor-input-grid">
+            <label for="monthlyIncome">Renda líquida mensal (R$)
+              <input id="monthlyIncome" type="number" min="0" step="100" inputmode="decimal" placeholder="Ex.: 9000" autocomplete="off" />
+            </label>
+            <label for="otherBills">Despesas fora do cartão (R$)
+              <input id="otherBills" type="number" min="0" step="100" inputmode="decimal" placeholder="Ex.: 1800" autocomplete="off" />
+            </label>
+          </div>
+          <div id="healthResult" class="advisor-health-result"></div>
+          <p class="advisor-footnote">Esses campos são opcionais, não são transmitidos nem armazenados pelo site. Considere apenas despesas fora da fatura para não duplicar valores.</p>
+        </div>
+      </section>
+    </section>
+
+
     <section class="grid-two">
       <section class="panel">
         <div class="panel-header"><div><h2>Gastos por categoria</h2><p>Onde o dinheiro foi consumido no mês selecionado.</p></div></div>
@@ -46,7 +127,7 @@
     </section>
 
     <section class="panel insights-panel">
-      <div class="panel-header"><div><h2>Leitura estratégica</h2><p>Diagnóstico prático para melhorar os próximos meses.</p></div></div>
+      <div class="panel-header"><div><h2>Plano de ação financeiro</h2><p>Prioridades fundamentadas nos números da fatura selecionada, sem cortar no escuro.</p></div></div>
       <div id="insights" class="insights"></div>
     </section>
 
@@ -67,5 +148,6 @@
   <script src="finance-data.js"></script>
   <script src="latest-data.js"></script>
   <script src="app.js"></script>
+  <script src="advisor.js"></script>
 </body>
 </html>
