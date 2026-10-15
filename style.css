@@ -431,7 +431,9 @@ tr:hover td { background: #f8fafc; }
   .advisor-mix-layout { flex-direction: column; }
   .advisor-donut { width: 176px; flex-basis: 176px; }
   .advisor-input-grid { grid-template-columns: 1fr; }
-  .advisor-trend { min-height: auto; }
+  .advisor-trend { min-height: auto; overflow-x: auto; }
+  .advisor-trend svg { min-width: 700px; }
+  .insights { grid-template-columns: 1fr; }
   .advisor-result > div { align-items: flex-start; flex-direction: column; gap: 4px; }
   .advisor-chart-note { font-size: 12px; }
 }
