@@ -304,3 +304,134 @@ tr:hover td { background: #f8fafc; }
   .button, #searchInput, .select { width: 100%; }
   .bar-top { flex-direction: column; gap: 4px; }
 }
+
+
+/* Camada consultiva: mantém a identidade do Continhas */
+.advisor-signals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 6px 0 22px;
+}
+.advisor-metric {
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.advisor-metric > span { color: #64748b; font-size: 13px; font-weight: 700; }
+.advisor-metric > strong { color: #0f172a; font-size: clamp(20px, 2.2vw, 27px); letter-spacing: -.03em; }
+.advisor-metric > small { color: #64748b; font-size: 12px; }
+.advisor-charts { align-items: stretch; }
+.advisor-charts > .panel { min-width: 0; }
+.advisor-trend { padding: 14px 12px 0; min-height: 225px; }
+.advisor-trend svg { width: 100%; height: auto; display: block; }
+.advisor-chart-note { padding: 0 22px 20px; color: #64748b; font-size: 13px; line-height: 1.6; margin: 0; }
+.advisor-mix-layout { padding: 24px; display: flex; align-items: center; gap: 26px; min-height: 280px; }
+.advisor-donut {
+  width: 190px;
+  aspect-ratio: 1;
+  flex: 0 0 190px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e2e8f0;
+}
+.advisor-donut-center {
+  background: #fff;
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, .75);
+}
+.advisor-donut-center strong { font-size: clamp(15px, 1.8vw, 19px); color: #0f172a; white-space: nowrap; }
+.advisor-donut-center small { margin-top: 3px; color: #64748b; font-size: 11px; }
+.advisor-legend { flex: 1; min-width: 0; display: grid; gap: 13px; }
+.advisor-legend-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.advisor-legend-name { display: flex; align-items: center; gap: 8px; min-width: 0; color: #334155; font-size: 13px; overflow-wrap: anywhere; }
+.advisor-dot { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 10px; }
+.advisor-legend-val { text-align: right; white-space: nowrap; }
+.advisor-legend-val strong { display: block; color: #1e293b; font-size: 13px; }
+.advisor-legend-val small { display: block; color: #94a3b8; font-size: 11px; margin-top: 2px; }
+.advisor-recurring-panel { margin: 22px 0; }
+.advisor-table { min-width: 700px; }
+.advisor-table td { padding: 14px 20px; font-size: 13px; }
+.advisor-table th { padding: 14px 20px; font-size: 11px; }
+.advisor-tag {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 11px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.advisor-tag-amber { color: #92400e; background: #fffbeb; }
+.advisor-footnote {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #64748b;
+  padding: 0 22px 20px;
+  margin: 0;
+}
+.advisor-planning-grid { margin: 22px 0; }
+.advisor-planning-body { padding: 22px; }
+.advisor-planning-body > .advisor-footnote { padding: 12px 0 0; }
+.advisor-slider-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.advisor-slider-heading label { color: #475569; font-size: 14px; font-weight: 700; }
+.advisor-slider-heading strong { color: #1d4ed8; font-size: 24px; }
+#savingPercent { padding: 0; width: 100%; cursor: pointer; accent-color: #2563eb; border: 0; background: transparent; }
+.advisor-result { margin-top: 20px; display: grid; gap: 12px; }
+.advisor-result > div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
+.advisor-result > div span { color: #475569; font-size: 13px; }
+.advisor-result > div strong { color: #0f172a; font-size: clamp(17px, 2vw, 23px); white-space: nowrap; }
+.advisor-result p { color: #64748b; font-size: 13px; line-height: 1.6; margin: 0; }
+.advisor-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.advisor-input-grid label { display: grid; gap: 7px; font-size: 12px; color: #475569; font-weight: 700; }
+.advisor-input-grid input { min-width: 0; width: 100%; font-size: 14px; }
+.advisor-health-result { margin-top: 16px; border-radius: 16px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; }
+.advisor-health-result > span { color: #64748b; font-size: 12px; }
+.advisor-health-result > strong { display: block; color: #1f2937; font-size: 22px; margin-bottom: 6px; }
+.advisor-health-result p { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: #475569; }
+.advisor-health-result small { display: block; margin-top: 10px; color: #64748b; line-height: 1.5; }
+.advisor-positive { color: #059669 !important; }
+.advisor-negative { color: #dc2626 !important; }
+.advisor-insight { display: flex; flex-direction: column; gap: 10px; }
+.advisor-insight-index { color: #2563eb; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; font-weight: 800; }
+.advisor-insight h3 { font-size: 17px; margin: 0; color: #0f172a; }
+.advisor-insight-metric { color: #1d4ed8; font-size: 19px; }
+.advisor-insight p { margin: 0; font-size: 13px; line-height: 1.6; color: #475569; }
+.advisor-next { padding-top: 12px; margin-top: auto; border-top: 1px solid #dce7f1; font-size: 13px; line-height: 1.55; }
+.advisor-next strong { display: block; margin-bottom: 4px; color: #0f172a; }
+.advisor-next span { color: #475569; }
+.advisor-empty { padding: 18px 22px; color: #64748b; }
+
+@media (max-width: 1140px) {
+  .advisor-mix-layout { flex-direction: column; align-items: center; }
+  .advisor-legend { width: 100%; }
+}
+@media (max-width: 900px) {
+  .advisor-signals { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .advisor-mix-layout { flex-direction: row; }
+}
+@media (max-width: 600px) {
+  .advisor-signals { grid-template-columns: 1fr; gap: 10px; }
+  .advisor-metric { padding: 14px 16px; }
+  .advisor-mix-layout { flex-direction: column; }
+  .advisor-donut { width: 176px; flex-basis: 176px; }
+  .advisor-input-grid { grid-template-columns: 1fr; }
+  .advisor-trend { min-height: auto; }
+  .advisor-result > div { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .advisor-chart-note { font-size: 12px; }
+}
