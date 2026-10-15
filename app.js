@@ -194,8 +194,9 @@ function comparisonRows(current, previous, key) {
 
 function renderComparison() {
   const stats = monthKeys.map(getMonthStats);
-  const current = stats[stats.length - 1];
-  const previous = stats[stats.length - 2] || current;
+  const selectedIndex = Math.max(0, stats.findIndex(item => item.month === state.currentMonth));
+  const current = stats[selectedIndex];
+  const previous = stats[selectedIndex - 1] || current;
   const totalDiff = current.total - previous.total;
 
   const monthlyCards = stats.map((item, index) => {
@@ -207,8 +208,9 @@ function renderComparison() {
     return `<article class="mini-card"><span>${item.label}</span><strong>${moneyFormatter.format(item.total)}</strong><small>${helper}</small></article>`;
   }).join("");
 
-  if (stats.length < 2) {
-    monthComparisonEl.innerHTML = `<div class="comparison-cards">${monthlyCards}</div>`;
+  if (selectedIndex === 0) {
+    monthComparisonEl.innerHTML = `<div class="comparison-cards">${monthlyCards}</div>
+      <p class="comparison-note">Esta é a primeira fatura disponível. Selecione um mês posterior para comparar categorias e responsáveis.</p>`;
     return;
   }
 
@@ -220,7 +222,7 @@ function renderComparison() {
   monthComparisonEl.innerHTML = `
     <div class="comparison-cards">
       ${monthlyCards}
-      <article class="mini-card"><span>Variação mais recente</span><strong class="${diffClass(totalDiff)}">${diffLabel(totalDiff)}</strong><small>${diffPercent(totalDiff, previous.total)} · ${previous.label} → ${current.label}</small></article>
+      <article class="mini-card"><span>Variação da fatura selecionada</span><strong class="${diffClass(totalDiff)}">${diffLabel(totalDiff)}</strong><small>${diffPercent(totalDiff, previous.total)} · ${previous.label} → ${current.label}</small></article>
     </div>
     <div class="comparison-grid">
       <div class="comparison-box">
