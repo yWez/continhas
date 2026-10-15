@@ -3,56 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Continhas</title>
+  <meta name="theme-color" content="#f5f3ee" />
+  <meta name="description" content="Continhas: uma leitura clara das suas faturas, hábitos de consumo e decisões financeiras." />
+  <title>Continhas — meu painel financeiro</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="page">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Dashboard financeiro pessoal</p>
-        <h1>Continhas</h1>
-        <p class="subtitle">Seus gastos em perspectiva: evolução das faturas, compras recorrentes e decisões mais inteligentes para o orçamento.</p>
+    <header class="masthead">
+      <div class="brand-lockup" aria-label="Continhas">
+        <span class="brand-symbol" aria-hidden="true">c<span>.</span></span>
+        <span class="brand-wordmark">continhas<span>.</span></span>
+      </div>
+      <div class="masthead-right"><span class="masthead-indicator"></span> Seu espaço financeiro</div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div class="hero-copy">
+        <p class="eyebrow">VISÃO GERAL <span class="eyebrow-separator">/</span> FINANÇAS PESSOAIS</p>
+        <h1 id="pageTitle">Mais clareza.<br/><em>Menos ruído.</em></h1>
+        <p class="subtitle">Seus gastos organizados, seus hábitos à vista e decisões com mais contexto.</p>
       </div>
       <div class="hero-actions">
-        <select id="monthSelect" class="select"></select>
-        <button id="reloadBtn" class="button">Atualizar painel</button>
-      </div>
-    </section>
-
-    <section id="status" class="status">Carregando análise...</section>
-
-    <section class="panel comparison-panel">
-      <div class="panel-header">
-        <div>
-          <h2>Comparativo entre meses</h2>
-          <p>Entenda o que subiu, o que caiu e onde o gasto mudou de comportamento.</p>
+        <label class="filter-label" for="monthSelect">FATURA EM FOCO</label>
+        <div class="filter-row">
+          <select id="monthSelect" class="select" aria-label="Escolher mês da fatura"></select>
+          <button id="reloadBtn" class="button" type="button">Recarregar dados <span aria-hidden="true">↗</span></button>
         </div>
       </div>
-      <div id="monthComparison" class="comparison"></div>
     </section>
 
-    <section id="summary" class="cards" aria-label="Resumo dos gastos"></section>
+    <section id="status" class="status" aria-live="polite">Carregando análise...</section>
 
+    <div class="section-intro">
+      <div>
+        <span class="section-kicker">01 / O RETRATO</span>
+        <h2>Visão da fatura</h2>
+      </div>
+      <p>O essencial, antes de entrar nos detalhes.</p>
+    </div>
+    <section id="summary" class="cards" aria-label="Resumo dos gastos"></section>
     <section id="advisorSignals" class="advisor-signals" aria-label="Indicadores financeiros"></section>
 
+    <div class="section-intro">
+      <div>
+        <span class="section-kicker">02 / PERSPECTIVA</span>
+        <h2>O dinheiro ao longo do tempo</h2>
+      </div>
+      <p>Observe a tendência, não só o valor isolado.</p>
+    </div>
     <section class="grid-two advisor-charts">
       <section class="panel">
         <div class="panel-header">
-          <div>
-            <h2>Evolução das faturas</h2>
-            <p>O que está mudando no valor do cartão ao longo dos meses.</p>
-          </div>
+          <div><h3>Evolução das faturas</h3><p>Histórico mensal do cartão</p></div>
         </div>
         <div id="trendChart" class="advisor-trend"></div>
         <p id="trendContext" class="advisor-chart-note"></p>
       </section>
       <section class="panel">
         <div class="panel-header">
-          <div>
-            <h2>Para onde vai o dinheiro?</h2>
-            <p>Participação das categorias na fatura escolhida.</p>
-          </div>
+          <div><h3>Composição dos gastos</h3><p>Para onde foi o dinheiro da fatura</p></div>
         </div>
         <div class="advisor-mix-layout">
           <div id="mixDonut" class="advisor-donut" role="img" aria-label="Distribuição de gastos por categoria">
@@ -63,25 +73,49 @@
       </section>
     </section>
 
-    <section class="panel advisor-recurring-panel">
+    <section class="panel comparison-panel">
       <div class="panel-header">
-        <div>
-          <h2>Compras que mais se repetem</h2>
-          <p id="recurringContext">Analisando os lançamentos de todas as faturas...</p>
-        </div>
+        <div><span class="section-kicker">COMPARAÇÃO</span><h3>Mês a mês, sem achismos</h3><p>O que cresceu, o que caiu e em quais categorias.</p></div>
       </div>
-      <div id="recurringTable"></div>
-      <p class="advisor-footnote">A repetição é calculada por nome normalizado de estabelecimento e fatura, não por data da compra. Parcelas, gastos distintos no mesmo local e nomes genéricos podem aparecer juntos. Confirme antes de cancelar ou cortar.</p>
+      <div id="monthComparison" class="comparison"></div>
     </section>
 
+    <div class="section-intro">
+      <div>
+        <span class="section-kicker">03 / COMPORTAMENTO</span>
+        <h2>O que vira hábito</h2>
+      </div>
+      <p>Frequência diz tanto quanto valor.</p>
+    </div>
+    <section class="panel advisor-recurring-panel">
+      <div class="panel-header">
+        <div><h3>Compras que mais se repetem</h3><p id="recurringContext">Analisando o histórico...</p></div>
+      </div>
+      <div id="recurringTable"></div>
+      <p class="advisor-footnote">Repetição entre faturas não significa assinatura. Parcelas e compras diferentes no mesmo estabelecimento podem aparecer juntas.</p>
+    </section>
+
+    <section class="grid-two spend-breakdown">
+      <section class="panel">
+        <div class="panel-header"><div><h3>Gastos por categoria</h3><p>Onde está a maior concentração.</p></div></div>
+        <div id="categoryChart" class="bars"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-header"><div><h3>Gastos por responsável</h3><p>Uma visão por pessoa ou finalidade.</p></div></div>
+        <div id="ownerChart" class="bars"></div>
+      </section>
+    </section>
+
+    <div class="section-intro">
+      <div>
+        <span class="section-kicker">04 / DECISÕES</span>
+        <h2>Transformar números em escolhas</h2>
+      </div>
+      <p>Simule cenários antes de mudar hábitos.</p>
+    </div>
     <section class="grid-two advisor-planning-grid">
       <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Simulador de economia</h2>
-            <p>Qual seria o efeito de reduzir alguns gastos revisáveis?</p>
-          </div>
-        </div>
+        <div class="panel-header"><div><h3>Onde dá para economizar?</h3><p>Uma simulação, não uma promessa.</p></div></div>
         <div class="advisor-planning-body">
           <div class="advisor-slider-heading">
             <label for="savingPercent">Redução hipotética</label>
@@ -91,60 +125,46 @@
           <div id="savingResult" class="advisor-result"></div>
         </div>
       </section>
-
       <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Saúde financeira: visão ampliada</h2>
-            <p>Informe o que falta para estimar sua folga mensal.</p>
-          </div>
-        </div>
+        <div class="panel-header"><div><h3>Sua margem de respiro</h3><p>Acrescente o que está fora do cartão.</p></div></div>
         <div class="advisor-planning-body">
           <div class="advisor-input-grid">
             <label for="monthlyIncome">Renda líquida mensal (R$)
               <input id="monthlyIncome" type="number" min="0" step="100" inputmode="decimal" placeholder="Ex.: 9000" autocomplete="off" />
             </label>
-            <label for="otherBills">Despesas fora do cartão (R$)
+            <label for="otherBills">Outras despesas do mês (R$)
               <input id="otherBills" type="number" min="0" step="100" inputmode="decimal" placeholder="Ex.: 1800" autocomplete="off" />
             </label>
           </div>
           <div id="healthResult" class="advisor-health-result"></div>
-          <p class="advisor-footnote">Esses campos são opcionais, não são transmitidos nem armazenados pelo site. Considere apenas despesas fora da fatura para não duplicar valores.</p>
+          <p class="advisor-footnote">Valores opcionais, calculados apenas nesta página e não armazenados. Não inclua duas vezes despesas que já estão na fatura.</p>
         </div>
-      </section>
-    </section>
-
-
-    <section class="grid-two">
-      <section class="panel">
-        <div class="panel-header"><div><h2>Gastos por categoria</h2><p>Onde o dinheiro foi consumido no mês selecionado.</p></div></div>
-        <div id="categoryChart" class="bars"></div>
-      </section>
-      <section class="panel">
-        <div class="panel-header"><div><h2>Gastos por dono</h2><p>Quem concentrou os lançamentos da fatura.</p></div></div>
-        <div id="ownerChart" class="bars"></div>
       </section>
     </section>
 
     <section class="panel insights-panel">
-      <div class="panel-header"><div><h2>Plano de ação financeiro</h2><p>Prioridades fundamentadas nos números da fatura selecionada, sem cortar no escuro.</p></div></div>
+      <div class="panel-header"><div><span class="section-kicker">PONTOS DE ATENÇÃO</span><h3>Onde eu olharia primeiro</h3><p>Uma leitura das categorias que merecem revisão, sem cortes automáticos.</p></div></div>
       <div id="insights" class="insights"></div>
     </section>
 
+    <div class="section-intro section-intro-table">
+      <div><span class="section-kicker">05 / DETALHE</span><h2>Cada lançamento, sem mistério</h2></div>
+      <p>O dado original sempre à mão.</p>
+    </div>
     <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Compras analisadas</h2>
-          <p id="tableInfo">Aguardando carregamento...</p>
-        </div>
-        <input id="searchInput" type="search" placeholder="Buscar gasto, categoria, dono ou local..." />
+      <div class="panel-header panel-header-table">
+        <div><h3>Compras analisadas</h3><p id="tableInfo">Aguardando carregamento...</p></div>
+        <input id="searchInput" type="search" aria-label="Buscar lançamentos" placeholder="Buscar compra, categoria ou responsável..." />
       </div>
-      <div class="table-wrap">
-        <table id="dataTable"></table>
-      </div>
+      <div class="table-wrap"><table id="dataTable"></table></div>
     </section>
-  </main>
 
+    <footer class="footer">
+      <div class="footer-brand">continhas<span>.</span></div>
+      <p>Mais consciência nas pequenas decisões.</p>
+      <span>Feito para enxergar melhor o próprio dinheiro.</span>
+    </footer>
+  </main>
   <script src="finance-data.js"></script>
   <script src="latest-data.js"></script>
   <script src="app.js"></script>
