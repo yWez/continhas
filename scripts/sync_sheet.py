@@ -22,6 +22,8 @@ KNOWN_SHEETS = {
     "Compras - Junho": 1138847875,
     "Compras - Julho": 836365473,
     "Compras - Agosto": 2050672183,
+    "Compras - Setembro": 1423724757,
+    "Compras - Outubro": 1571225943,
 }
 
 MONTH_ORDER = [
