@@ -333,7 +333,7 @@ function renderDashboard() {
   renderInsights(rows, total, byCategory, byOwner, byLocal);
   renderTable(state.filteredRows);
 
-  statusEl.textContent = `Dados carregados de ${DATA.source}. Base sincronizada em ${DATA.updatedAt}. Novos meses aparecem automaticamente após a sincronização do GitHub.`;
+  statusEl.textContent = `Fonte: ${DATA.source} · Atualizado em ${DATA.updatedAt} · ${monthKeys.length} faturas disponíveis.`;
 }
 
 function applySearch() {
