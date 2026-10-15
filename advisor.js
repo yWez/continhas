@@ -13,7 +13,7 @@
   const sum = rows => rows.reduce((total, row) => total + (Number(row.Valor) || 0), 0);
   const keys = [...monthKeys];
   const reports = keys.map(key => ({ key, month: getMonthName(key), rows: DATA.months[key] || [], total: sum(DATA.months[key] || []) }));
-  const palette = ["#2563eb", "#0ea5e9", "#10b981", "#f59e0b", "#8b5cf6", "#94a3b8"];
+  const palette = ["#285347", "#c18c5e", "#819c84", "#9e786e", "#607c87", "#b1ad9e"];
   const purchaseCategories = new Set([
     "compras online", "alimentacao", "locomocao", "assinaturas",
     "lazer", "entretenimento", "barbearia", "delivery", "restaurante", "restaurantes"
@@ -88,29 +88,29 @@
     const fill = `${coords} L${x(reports.length - 1)},${baseY} L${x(0)},${baseY} Z`;
     const guides = [0, 0.25, 0.5, 0.75, 1].map(step => {
       const ypos = y(ceiling * step);
-      return `<line x1="${left}" y1="${ypos}" x2="${w - right}" y2="${ypos}" stroke="#e8eef5" stroke-width="1"/>
-        <text x="${left - 12}" y="${ypos + 4}" text-anchor="end" fill="#8491a5" font-size="12">${esc(compact(ceiling * step))}</text>`;
+      return `<line x1="${left}" y1="${ypos}" x2="${w - right}" y2="${ypos}" stroke="#e5e9df" stroke-width="1"/>
+        <text x="${left - 12}" y="${ypos + 4}" text-anchor="end" fill="#859085" font-size="12">${esc(compact(ceiling * step))}</text>`;
     }).join("");
     const points = reports.map((report, i) => {
       const [px, py] = pointList[i];
       const active = report.key === selected.key;
       const labelY = Math.max(top - 10, py - 16);
       return `<g>
-        <circle cx="${px}" cy="${py}" r="${active ? 8 : 6}" fill="${active ? "#2563eb" : "#fff"}" stroke="#2563eb" stroke-width="3">
+        <circle cx="${px}" cy="${py}" r="${active ? 8 : 6}" fill="${active ? "#285347" : "#fff"}" stroke="#285347" stroke-width="3">
           <title>${esc(report.month)}: ${esc(money(report.total))}</title>
         </circle>
-        <text x="${px}" y="${labelY}" text-anchor="middle" fill="${active ? "#1d4ed8" : "#475569"}" font-weight="${active ? 800 : 600}" font-size="12">${esc(compact(report.total))}</text>
-        <text x="${px}" y="${baseY + 26}" text-anchor="middle" fill="${active ? "#1d4ed8" : "#64748b"}" font-size="13" font-weight="${active ? 800 : 500}">${esc(report.month.slice(0, 3))}</text>
+        <text x="${px}" y="${labelY}" text-anchor="middle" fill="${active ? "#285347" : "#59675e"}" font-weight="${active ? 800 : 600}" font-size="12">${esc(compact(report.total))}</text>
+        <text x="${px}" y="${baseY + 26}" text-anchor="middle" fill="${active ? "#285347" : "#778179"}" font-size="13" font-weight="${active ? 800 : 500}">${esc(report.month.slice(0, 3))}</text>
       </g>`;
     }).join("");
     el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Evolução do valor total das faturas: ${esc(reports.map(r => `${r.month} ${money(r.total)}`).join("; "))}" xmlns="http://www.w3.org/2000/svg">
       <defs><linearGradient id="advisorArea" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#2563eb" stop-opacity=".21"/>
-        <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+        <stop offset="0%" stop-color="#285347" stop-opacity=".21"/>
+        <stop offset="100%" stop-color="#285347" stop-opacity="0"/>
       </linearGradient></defs>
       ${guides}
       <path d="${fill}" fill="url(#advisorArea)"/>
-      <path d="${coords}" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${coords}" fill="none" stroke="#285347" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
       ${points}
     </svg>`;
     const average = reports.reduce((total, r) => total + r.total, 0) / reports.length;
@@ -127,7 +127,7 @@
     const all = categoryTotals(selected.rows);
     const total = selected.total;
     if (!total || !all.length) {
-      chart.style.background = "#e2e8f0";
+      chart.style.background = "#dedfd8";
       legend.innerHTML = '<p class="advisor-empty">Ainda não há dados nesta fatura.</p>';
       return;
     }
